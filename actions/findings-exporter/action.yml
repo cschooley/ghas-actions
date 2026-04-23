@@ -1,0 +1,50 @@
+name: 'GHAS Findings Exporter'
+description: 'Export GitHub Advanced Security alerts to JSON or CSV'
+author: 'cschooley'
+
+inputs:
+  token:
+    description: 'GitHub token with security_events scope'
+    required: true
+  repo:
+    description: 'Target repository in owner/repo format'
+    required: true
+  alert_types:
+    description: 'Comma-separated alert types: code_scanning, secret_scanning, dependabot'
+    required: false
+    default: 'code_scanning,secret_scanning,dependabot'
+  state:
+    description: 'Alert state: open, dismissed, fixed, all'
+    required: false
+    default: 'open'
+  output_format:
+    description: 'Output format: json or csv'
+    required: false
+    default: 'json'
+  output_file:
+    description: 'Path to write output'
+    required: false
+    default: 'findings.json'
+  severity_filter:
+    description: 'Minimum severity to include: critical, high, medium, low (default: include all)'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      run: pip install requests --quiet
+      shell: bash
+
+    - name: Export GHAS findings
+      run: python ${{ github.action_path }}/src/export.py
+      shell: bash
+      env:
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_REPO: ${{ inputs.repo }}
+        INPUT_ALERT_TYPES: ${{ inputs.alert_types }}
+        INPUT_STATE: ${{ inputs.state }}
+        INPUT_OUTPUT_FORMAT: ${{ inputs.output_format }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output_file }}
+        INPUT_SEVERITY_FILTER: ${{ inputs.severity_filter }}
