@@ -1,0 +1,31 @@
+name: Dependency Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Block PRs that introduce vulnerabilities at these severities or higher
+          fail-on-severity: moderate
+
+          # Block dependencies with these SPDX licenses (copyleft / proprietary)
+          deny-licenses: GPL-2.0, GPL-3.0, LGPL-2.0, LGPL-2.1, AGPL-3.0
+
+          # Post a summary comment on the PR
+          comment-summary-in-pr: always
+
+          # Fail if any dependency has no license information
+          # deny-unlicensed: true  # Uncomment to enforce license presence
