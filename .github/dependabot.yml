@@ -17,25 +17,8 @@ updates:
         patterns:
           - "*"
 
-  # npm (adjust or remove if not applicable)
-  - package-ecosystem: npm
-    directory: /
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: "chore(deps)"
-    labels:
-      - dependencies
-    open-pull-requests-limit: 10
-    groups:
-      production-deps:
-        dependency-type: production
-      dev-deps:
-        dependency-type: development
-
-  # pip (adjust or remove if not applicable)
   - package-ecosystem: pip
-    directory: /
+    directory: /actions/findings-exporter
     schedule:
       interval: weekly
     commit-message:

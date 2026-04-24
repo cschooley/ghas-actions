@@ -1,0 +1,32 @@
+name: Export GHAS Findings
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 6am UTC
+  workflow_dispatch:
+
+jobs:
+  export-findings:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Export GHAS findings
+        uses: cschooley/ghas-actions/actions/findings-exporter@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repo: ${{ github.repository }}
+          alert_types: code_scanning,secret_scanning,dependabot
+          state: open
+          output_format: json
+          output_file: findings.json
+
+      - name: Upload findings artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghas-findings-${{ github.run_id }}
+          path: findings.json
+          retention-days: 90

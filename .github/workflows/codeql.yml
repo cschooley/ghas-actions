@@ -23,11 +23,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - language: javascript-typescript
-            build-mode: none
           - language: python
             build-mode: none
-          # Add others as needed: java-kotlin, csharp, go, ruby, swift, cpp
 
     steps:
       - name: Checkout repository
