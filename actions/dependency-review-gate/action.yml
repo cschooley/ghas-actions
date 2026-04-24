@@ -1,0 +1,63 @@
+name: 'Dependency Review Gate'
+description: 'Opinionated PR gate for dependency vulnerabilities and license compliance'
+author: 'cschooley'
+
+inputs:
+  token:
+    description: 'GitHub token'
+    required: true
+  repo:
+    description: 'Repository in owner/repo format'
+    required: true
+  base_sha:
+    description: 'Base commit SHA (github.event.pull_request.base.sha)'
+    required: true
+  head_sha:
+    description: 'Head commit SHA (github.event.pull_request.head.sha)'
+    required: true
+  pr_number:
+    description: 'Pull request number for posting comments'
+    required: false
+    default: ''
+  fail_on_severity:
+    description: 'Minimum vulnerability severity to fail on: critical, high, medium, low'
+    required: false
+    default: 'high'
+  allow_licenses:
+    description: 'Comma-separated SPDX license identifiers that are allowed (mutually exclusive with deny_licenses)'
+    required: false
+    default: ''
+  deny_licenses:
+    description: 'Comma-separated SPDX license identifiers that are blocked'
+    required: false
+    default: ''
+  ignore_cves:
+    description: 'Comma-separated CVE/GHSA IDs to ignore (logged in PR comment for audit trail)'
+    required: false
+    default: ''
+  comment_on_pr:
+    description: 'Post a summary comment on the PR'
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      run: pip install -r ${{ github.action_path }}/requirements.txt --quiet
+      shell: bash
+
+    - name: Run dependency review gate
+      run: python ${{ github.action_path }}/src/gate.py
+      shell: bash
+      env:
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_REPO: ${{ inputs.repo }}
+        INPUT_BASE_SHA: ${{ inputs.base_sha }}
+        INPUT_HEAD_SHA: ${{ inputs.head_sha }}
+        INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+        INPUT_FAIL_ON_SEVERITY: ${{ inputs.fail_on_severity }}
+        INPUT_ALLOW_LICENSES: ${{ inputs.allow_licenses }}
+        INPUT_DENY_LICENSES: ${{ inputs.deny_licenses }}
+        INPUT_IGNORE_CVES: ${{ inputs.ignore_cves }}
+        INPUT_COMMENT_ON_PR: ${{ inputs.comment_on_pr }}
