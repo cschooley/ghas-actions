@@ -1,0 +1,59 @@
+name: 'GHAS Enablement'
+description: 'Enable GitHub Advanced Security features on a repo or across an org'
+author: 'cschooley'
+
+inputs:
+  token:
+    description: 'GitHub token with repo admin or admin:org scope'
+    required: true
+  target:
+    description: 'Target repo (owner/repo) or org name'
+    required: true
+  target_type:
+    description: 'Target type: repo or org'
+    required: true
+  enable_code_scanning:
+    description: 'Deploy a CodeQL workflow to enable code scanning'
+    required: false
+    default: 'true'
+  enable_secret_scanning:
+    description: 'Enable secret scanning and push protection'
+    required: false
+    default: 'true'
+  enable_dependabot_alerts:
+    description: 'Enable Dependabot alerts'
+    required: false
+    default: 'true'
+  enable_dependabot_updates:
+    description: 'Enable Dependabot security updates'
+    required: false
+    default: 'true'
+  code_scanning_config:
+    description: 'Path to a CodeQL config file to deploy alongside the workflow'
+    required: false
+    default: ''
+  dry_run:
+    description: 'Report what would change without making any changes'
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      run: pip install -r ${{ github.action_path }}/requirements.txt --quiet
+      shell: bash
+
+    - name: Enable GHAS features
+      run: python ${{ github.action_path }}/src/enable.py
+      shell: bash
+      env:
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_TARGET: ${{ inputs.target }}
+        INPUT_TARGET_TYPE: ${{ inputs.target_type }}
+        INPUT_ENABLE_CODE_SCANNING: ${{ inputs.enable_code_scanning }}
+        INPUT_ENABLE_SECRET_SCANNING: ${{ inputs.enable_secret_scanning }}
+        INPUT_ENABLE_DEPENDABOT_ALERTS: ${{ inputs.enable_dependabot_alerts }}
+        INPUT_ENABLE_DEPENDABOT_UPDATES: ${{ inputs.enable_dependabot_updates }}
+        INPUT_CODE_SCANNING_CONFIG: ${{ inputs.code_scanning_config }}
+        INPUT_DRY_RUN: ${{ inputs.dry_run }}

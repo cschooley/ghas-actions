@@ -1,0 +1,23 @@
+name: Enable GHAS Org-Wide
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — show what would change without making changes'
+        type: boolean
+        default: true
+
+jobs:
+  enable-ghas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable GHAS features
+        uses: cschooley/ghas-actions/actions/ghas-enablement@main
+        with:
+          token: ${{ secrets.ORG_ADMIN_TOKEN }}
+          target: my-org
+          target_type: org
+          dry_run: ${{ inputs.dry_run }}
