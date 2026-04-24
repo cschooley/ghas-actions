@@ -1,0 +1,31 @@
+name: Validate and Upload SARIF
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  scan-and-validate:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Run your scanner here — this example uses a hypothetical tool
+      - name: Run scanner
+        run: my-scanner --output results.sarif
+
+      - name: Validate SARIF
+        uses: cschooley/ghas-actions/actions/sarif-validator@main
+        with:
+          sarif_file: results.sarif
+          strict: false
+          max_results: 1000
+
+      - name: Upload to GitHub code scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
