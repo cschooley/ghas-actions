@@ -1,0 +1,27 @@
+name: 'SARIF Validator'
+description: 'Validate a SARIF file before uploading to GitHub code scanning'
+author: 'cschooley'
+
+inputs:
+  sarif_file:
+    description: 'Path to the SARIF file to validate'
+    required: true
+  strict:
+    description: 'Fail on warnings as well as errors'
+    required: false
+    default: 'false'
+  max_results:
+    description: 'Warn if result count exceeds this threshold'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Validate SARIF file
+      run: python ${{ github.action_path }}/src/validate.py
+      shell: bash
+      env:
+        INPUT_SARIF_FILE: ${{ inputs.sarif_file }}
+        INPUT_STRICT: ${{ inputs.strict }}
+        INPUT_MAX_RESULTS: ${{ inputs.max_results }}
