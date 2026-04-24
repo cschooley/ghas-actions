@@ -34,7 +34,7 @@ runs:
   using: composite
   steps:
     - name: Install dependencies
-      run: pip install requests --quiet
+      run: pip install -r ${{ github.action_path }}/requirements.txt --quiet
       shell: bash
 
     - name: Export GHAS findings
