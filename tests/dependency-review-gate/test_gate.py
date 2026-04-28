@@ -214,6 +214,29 @@ def test_build_comment_ignored_audit_trail():
     assert "Ignored" in comment
     assert "GHSA-audit" in comment
 
+def test_build_comment_advisory_mode_includes_note():
+    violations = [{
+        "package": "pkg", "version": "1.0", "ecosystem": "npm",
+        "severity": "high", "cve": "GHSA-xxxx", "license": "MIT",
+        "reason": "vulnerability (high)",
+    }]
+    comment = gate.build_comment(violations, [], passed=False, advisory=True)
+    assert "Advisory mode" in comment
+    assert "non-blocking" in comment
+
+def test_build_comment_advisory_note_absent_when_not_advisory():
+    violations = [{
+        "package": "pkg", "version": "1.0", "ecosystem": "npm",
+        "severity": "high", "cve": "GHSA-xxxx", "license": "MIT",
+        "reason": "vulnerability (high)",
+    }]
+    comment = gate.build_comment(violations, [], passed=False, advisory=False)
+    assert "Advisory mode" not in comment
+
+def test_build_comment_advisory_note_absent_when_passed():
+    comment = gate.build_comment([], [], passed=True, advisory=True)
+    assert "Advisory mode" not in comment
+
 def test_build_comment_none_severity_renders_dash():
     violations = [{
         "package": "badpkg", "version": "1.0", "ecosystem": "npm",
@@ -252,6 +275,7 @@ BASE_ENV = {
     "INPUT_DENY_LICENSES": "",
     "INPUT_IGNORE_CVES": "",
     "INPUT_COMMENT_ON_PR": "true",
+    "INPUT_FAIL_ON_FINDINGS": "true",
 }
 
 def test_main_missing_token(capsys):
@@ -323,6 +347,28 @@ def test_main_posts_comment_when_pr_number_set(capsys):
                 with pytest.raises(SystemExit):
                     gate.main()
     mock_comment.assert_called_once()
+
+def test_main_advisory_mode_exits_0_with_violations(capsys):
+    change = make_change(vulnerabilities=[make_vuln("critical")])
+    env = {**BASE_ENV, "INPUT_COMMENT_ON_PR": "false", "INPUT_FAIL_ON_FINDINGS": "false"}
+    with patch.dict(os.environ, env, clear=True):
+        with patch("gate.get_dependency_changes", return_value=[change]):
+            with pytest.raises(SystemExit) as exc:
+                gate.main()
+    assert exc.value.code == 0
+    assert "FAILED" in capsys.readouterr().out
+
+def test_main_advisory_mode_posts_comment_with_advisory_note(capsys):
+    change = make_change(vulnerabilities=[make_vuln("high")])
+    env = {**BASE_ENV, "INPUT_PR_NUMBER": "5", "INPUT_FAIL_ON_FINDINGS": "false"}
+    with patch.dict(os.environ, env, clear=True):
+        with patch("gate.get_dependency_changes", return_value=[change]):
+            with patch("gate.post_pr_comment") as mock_comment:
+                with pytest.raises(SystemExit):
+                    gate.main()
+    mock_comment.assert_called_once()
+    comment_body = mock_comment.call_args[0][3]
+    assert "Advisory mode" in comment_body
 
 def test_main_warns_when_comment_true_no_pr(capsys):
     env = {**BASE_ENV, "INPUT_PR_NUMBER": "", "INPUT_COMMENT_ON_PR": "true"}

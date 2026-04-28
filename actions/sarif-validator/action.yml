@@ -14,6 +14,10 @@ inputs:
     description: 'Warn if result count exceeds this threshold'
     required: false
     default: ''
+  fail_on_findings:
+    description: 'Exit 1 if validation errors or warnings (in strict mode) are found. Set to false for advisory/observe mode.'
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -25,3 +29,4 @@ runs:
         INPUT_SARIF_FILE: ${{ inputs.sarif_file }}
         INPUT_STRICT: ${{ inputs.strict }}
         INPUT_MAX_RESULTS: ${{ inputs.max_results }}
+        INPUT_FAIL_ON_FINDINGS: ${{ inputs.fail_on_findings }}
