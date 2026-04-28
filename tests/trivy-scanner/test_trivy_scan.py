@@ -1,11 +1,17 @@
+import importlib.util
 import os
 import sys
 from unittest.mock import patch
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../actions/trivy-scanner/src"))
-import scan
+_spec = importlib.util.spec_from_file_location(
+    "trivy_scan",
+    os.path.join(os.path.dirname(__file__), "../../actions/trivy-scanner/src/scan.py"),
+)
+scan = importlib.util.module_from_spec(_spec)
+sys.modules["trivy_scan"] = scan
+_spec.loader.exec_module(scan)
 
 
 BASE_ENV = {
@@ -119,7 +125,7 @@ def test_main_valid_config_file(tmp_path, capsys):
     config = tmp_path / "trivy.yaml"
     config.write_text("timeout: 5m\n")
     with patch.dict(os.environ, {**BASE_ENV, "INPUT_TRIVY_CONFIG": str(config)}, clear=True):
-        with patch("scan.run_trivy", return_value=0):
+        with patch("trivy_scan.run_trivy", return_value=0):
             with pytest.raises(SystemExit) as exc:
                 scan.main()
     assert exc.value.code == 0
@@ -129,7 +135,7 @@ def test_main_valid_config_file(tmp_path, capsys):
 
 def test_main_happy_path_exits_0(capsys):
     with patch.dict(os.environ, BASE_ENV, clear=True):
-        with patch("scan.run_trivy", return_value=0):
+        with patch("trivy_scan.run_trivy", return_value=0):
             with pytest.raises(SystemExit) as exc:
                 scan.main()
     assert exc.value.code == 0
@@ -137,7 +143,7 @@ def test_main_happy_path_exits_0(capsys):
 
 def test_main_trivy_failure_propagates(capsys):
     with patch.dict(os.environ, BASE_ENV, clear=True):
-        with patch("scan.run_trivy", return_value=2):
+        with patch("trivy_scan.run_trivy", return_value=2):
             with pytest.raises(SystemExit) as exc:
                 scan.main()
     assert exc.value.code == 2
@@ -149,7 +155,7 @@ def test_main_passes_correct_cmd_to_run_trivy():
         captured.extend(cmd)
         return 0
     with patch.dict(os.environ, BASE_ENV, clear=True):
-        with patch("scan.run_trivy", side_effect=fake_run):
+        with patch("trivy_scan.run_trivy", side_effect=fake_run):
             with pytest.raises(SystemExit):
                 scan.main()
     assert "fs" in captured
@@ -163,7 +169,7 @@ def test_main_ignore_unfixed_passed_through():
         captured.extend(cmd)
         return 0
     with patch.dict(os.environ, {**BASE_ENV, "INPUT_IGNORE_UNFIXED": "true"}, clear=True):
-        with patch("scan.run_trivy", side_effect=fake_run):
+        with patch("trivy_scan.run_trivy", side_effect=fake_run):
             with pytest.raises(SystemExit):
                 scan.main()
     assert "--ignore-unfixed" in captured
@@ -174,7 +180,7 @@ def test_main_severity_low_passes_all_levels():
         captured.extend(cmd)
         return 0
     with patch.dict(os.environ, {**BASE_ENV, "INPUT_SEVERITY": "LOW"}, clear=True):
-        with patch("scan.run_trivy", side_effect=fake_run):
+        with patch("trivy_scan.run_trivy", side_effect=fake_run):
             with pytest.raises(SystemExit):
                 scan.main()
     sev_idx = captured.index("--severity")
@@ -187,7 +193,7 @@ def test_main_image_scan_type():
         return 0
     env = {**BASE_ENV, "INPUT_SCAN_TYPE": "image", "INPUT_TARGET": "python:3.11-slim"}
     with patch.dict(os.environ, env, clear=True):
-        with patch("scan.run_trivy", side_effect=fake_run):
+        with patch("trivy_scan.run_trivy", side_effect=fake_run):
             with pytest.raises(SystemExit):
                 scan.main()
     assert "image" in captured
