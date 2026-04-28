@@ -3,6 +3,8 @@ name: CodeQL Advanced
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   schedule:
     # Deep scan nightly
     - cron: "0 2 * * *"

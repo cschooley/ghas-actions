@@ -126,6 +126,7 @@ def main() -> None:
     sarif_file = os.environ.get("INPUT_SARIF_FILE", "").strip()
     strict = os.environ.get("INPUT_STRICT", "false").strip().lower() in ("true", "1", "yes")
     max_results_raw = os.environ.get("INPUT_MAX_RESULTS", "").strip()
+    fail_on_findings = os.environ.get("INPUT_FAIL_ON_FINDINGS", "true").strip().lower() in ("true", "1", "yes")
     max_results = int(max_results_raw) if max_results_raw.isdigit() else None
 
     if not sarif_file:
@@ -180,9 +181,15 @@ def main() -> None:
 
     if has_failures:
         print(f"\nResult: FAIL ({sum(1 for c in all_checks if c['status'] == 'fail')} error(s))")
+        if not fail_on_findings:
+            print("Advisory mode — check is non-blocking.")
+            sys.exit(0)
         sys.exit(1)
     if strict and has_warnings:
         print(f"\nResult: FAIL — strict mode ({sum(1 for c in all_checks if c['status'] == 'warn')} warning(s))")
+        if not fail_on_findings:
+            print("Advisory mode — check is non-blocking.")
+            sys.exit(0)
         sys.exit(1)
     print("\nResult: PASS")
     sys.exit(0)
