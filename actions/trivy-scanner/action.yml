@@ -1,0 +1,60 @@
+name: 'Trivy Scanner'
+description: 'Scan a container image, filesystem, or IaC config with Trivy and upload results to GHAS'
+author: 'cschooley'
+
+inputs:
+  target:
+    description: 'What to scan — image name, directory path, or config path'
+    required: true
+  scan_type:
+    description: 'Scan type: image, fs, config'
+    required: false
+    default: 'fs'
+  severity:
+    description: 'Minimum severity to report: CRITICAL, HIGH, MEDIUM, LOW'
+    required: false
+    default: 'HIGH'
+  output_file:
+    description: 'Path to write SARIF output'
+    required: false
+    default: 'trivy-results.sarif'
+  upload_to_ghas:
+    description: 'Upload SARIF results to GitHub code scanning'
+    required: false
+    default: 'true'
+  ignore_unfixed:
+    description: 'Exclude vulnerabilities with no available fix'
+    required: false
+    default: 'false'
+  trivy_config:
+    description: 'Path to a trivy.yaml config file'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Install Trivy
+      run: |
+        if ! command -v trivy &>/dev/null; then
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        fi
+      shell: bash
+
+    - name: Run Trivy scan
+      run: python ${{ github.action_path }}/src/scan.py
+      shell: bash
+      env:
+        INPUT_TARGET: ${{ inputs.target }}
+        INPUT_SCAN_TYPE: ${{ inputs.scan_type }}
+        INPUT_SEVERITY: ${{ inputs.severity }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output_file }}
+        INPUT_IGNORE_UNFIXED: ${{ inputs.ignore_unfixed }}
+        INPUT_TRIVY_CONFIG: ${{ inputs.trivy_config }}
+
+    - name: Upload SARIF to GHAS
+      if: inputs.upload_to_ghas == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output_file }}
+        category: trivy-${{ inputs.scan_type }}
