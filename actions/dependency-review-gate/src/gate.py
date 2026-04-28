@@ -141,7 +141,7 @@ def evaluate_changes(
     return violations, ignored
 
 
-def build_comment(violations: list[dict], ignored: list[dict], passed: bool) -> str:
+def build_comment(violations: list[dict], ignored: list[dict], passed: bool, advisory: bool = False) -> str:
     lines = []
 
     if passed:
@@ -152,6 +152,10 @@ def build_comment(violations: list[dict], ignored: list[dict], passed: bool) -> 
         lines.append("## Dependency Review Gate: FAILED")
         lines.append("")
         lines.append(f"{len(violations)} issue(s) found in added dependencies.")
+        if advisory:
+            lines.append("")
+            lines.append("> [!WARNING]")
+            lines.append("> Advisory mode — findings detected but check is non-blocking.")
 
     if violations:
         lines.append("")
@@ -200,6 +204,7 @@ def main() -> None:
     deny_licenses_raw = os.environ.get("INPUT_DENY_LICENSES", "").strip()
     ignore_cves_raw = os.environ.get("INPUT_IGNORE_CVES", "").strip()
     comment_on_pr = os.environ.get("INPUT_COMMENT_ON_PR", "true").strip().lower() in ("true", "1", "yes")
+    fail_on_findings = os.environ.get("INPUT_FAIL_ON_FINDINGS", "true").strip().lower() in ("true", "1", "yes")
 
     if not token:
         print("ERROR: 'token' input is required.", file=sys.stderr)
@@ -252,13 +257,13 @@ def main() -> None:
         print("\nPASSED — no violations found")
 
     if comment_on_pr and pr_number:
-        comment = build_comment(violations, ignored, passed)
+        comment = build_comment(violations, ignored, passed, advisory=not fail_on_findings)
         post_pr_comment(session, repo, pr_number, comment)
         print(f"  PR comment posted on #{pr_number}")
     elif comment_on_pr and not pr_number:
         print("  WARNING: comment_on_pr is true but no PR number provided — skipping comment", file=sys.stderr)
 
-    if not passed:
+    if not passed and fail_on_findings:
         sys.exit(1)
     sys.exit(0)
 

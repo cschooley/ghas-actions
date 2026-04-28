@@ -204,9 +204,12 @@ def test_main_file_not_found_exits_2():
 
 # --- main: end-to-end ---
 
+BASE_ENV = {"INPUT_STRICT": "false", "INPUT_MAX_RESULTS": "", "INPUT_FAIL_ON_FINDINGS": "true"}
+
+
 def test_main_valid_sarif_exits_0(tmp_path):
     path = write_sarif(tmp_path, make_sarif())
-    with patch.dict(os.environ, {"INPUT_SARIF_FILE": path, "INPUT_STRICT": "false", "INPUT_MAX_RESULTS": ""}, clear=True):
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": path}, clear=True):
         with pytest.raises(SystemExit) as exc:
             validate.main()
     assert exc.value.code == 0
@@ -214,14 +217,14 @@ def test_main_valid_sarif_exits_0(tmp_path):
 def test_main_invalid_json_exits_1(tmp_path):
     path = tmp_path / "bad.sarif"
     path.write_text("{not json")
-    with patch.dict(os.environ, {"INPUT_SARIF_FILE": str(path), "INPUT_STRICT": "false", "INPUT_MAX_RESULTS": ""}, clear=True):
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": str(path)}, clear=True):
         with pytest.raises(SystemExit) as exc:
             validate.main()
     assert exc.value.code == 1
 
 def test_main_wrong_version_exits_1(tmp_path):
     path = write_sarif(tmp_path, make_sarif(version="1.0.0"))
-    with patch.dict(os.environ, {"INPUT_SARIF_FILE": path, "INPUT_STRICT": "false", "INPUT_MAX_RESULTS": ""}, clear=True):
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": path}, clear=True):
         with pytest.raises(SystemExit) as exc:
             validate.main()
     assert exc.value.code == 1
@@ -229,7 +232,7 @@ def test_main_wrong_version_exits_1(tmp_path):
 def test_main_warnings_pass_non_strict(tmp_path):
     results = [make_result(uri="/absolute/path.py")]
     path = write_sarif(tmp_path, make_sarif(runs=[make_run(results=results)]))
-    with patch.dict(os.environ, {"INPUT_SARIF_FILE": path, "INPUT_STRICT": "false", "INPUT_MAX_RESULTS": ""}, clear=True):
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": path}, clear=True):
         with pytest.raises(SystemExit) as exc:
             validate.main()
     assert exc.value.code == 0
@@ -237,7 +240,7 @@ def test_main_warnings_pass_non_strict(tmp_path):
 def test_main_warnings_fail_strict(tmp_path):
     results = [make_result(uri="/absolute/path.py")]
     path = write_sarif(tmp_path, make_sarif(runs=[make_run(results=results)]))
-    with patch.dict(os.environ, {"INPUT_SARIF_FILE": path, "INPUT_STRICT": "true", "INPUT_MAX_RESULTS": ""}, clear=True):
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": path, "INPUT_STRICT": "true"}, clear=True):
         with pytest.raises(SystemExit) as exc:
             validate.main()
     assert exc.value.code == 1
@@ -245,7 +248,7 @@ def test_main_warnings_fail_strict(tmp_path):
 def test_main_max_results_exceeded_warns(tmp_path, capsys):
     results = [make_result() for _ in range(5)]
     path = write_sarif(tmp_path, make_sarif(runs=[make_run(results=results)]))
-    with patch.dict(os.environ, {"INPUT_SARIF_FILE": path, "INPUT_STRICT": "false", "INPUT_MAX_RESULTS": "3"}, clear=True):
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": path, "INPUT_MAX_RESULTS": "3"}, clear=True):
         with pytest.raises(SystemExit) as exc:
             validate.main()
     assert exc.value.code == 0
@@ -254,7 +257,32 @@ def test_main_max_results_exceeded_warns(tmp_path, capsys):
 def test_main_max_results_exceeded_fails_strict(tmp_path):
     results = [make_result() for _ in range(5)]
     path = write_sarif(tmp_path, make_sarif(runs=[make_run(results=results)]))
-    with patch.dict(os.environ, {"INPUT_SARIF_FILE": path, "INPUT_STRICT": "true", "INPUT_MAX_RESULTS": "3"}, clear=True):
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": path, "INPUT_STRICT": "true", "INPUT_MAX_RESULTS": "3"}, clear=True):
         with pytest.raises(SystemExit) as exc:
             validate.main()
     assert exc.value.code == 1
+
+
+# --- advisory mode ---
+
+def test_main_advisory_mode_exits_0_on_fail(tmp_path):
+    path = write_sarif(tmp_path, make_sarif(version="1.0.0"))
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": path, "INPUT_FAIL_ON_FINDINGS": "false"}, clear=True):
+        with pytest.raises(SystemExit) as exc:
+            validate.main()
+    assert exc.value.code == 0
+
+def test_main_advisory_mode_exits_0_on_strict_warn(tmp_path):
+    results = [make_result(uri="/absolute/path.py")]
+    path = write_sarif(tmp_path, make_sarif(runs=[make_run(results=results)]))
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": path, "INPUT_STRICT": "true", "INPUT_FAIL_ON_FINDINGS": "false"}, clear=True):
+        with pytest.raises(SystemExit) as exc:
+            validate.main()
+    assert exc.value.code == 0
+
+def test_main_advisory_mode_prints_advisory_note(tmp_path, capsys):
+    path = write_sarif(tmp_path, make_sarif(version="1.0.0"))
+    with patch.dict(os.environ, {**BASE_ENV, "INPUT_SARIF_FILE": path, "INPUT_FAIL_ON_FINDINGS": "false"}, clear=True):
+        with pytest.raises(SystemExit):
+            validate.main()
+    assert "Advisory mode" in capsys.readouterr().out
