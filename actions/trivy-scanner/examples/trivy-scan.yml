@@ -1,0 +1,56 @@
+name: Trivy Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  trivy-fs:
+    name: Filesystem scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./actions/trivy-scanner
+        with:
+          target: '.'
+          scan_type: fs
+          severity: HIGH
+          upload_to_ghas: 'true'
+
+  trivy-config:
+    name: IaC / config scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./actions/trivy-scanner
+        with:
+          target: '.'
+          scan_type: config
+          severity: HIGH
+          upload_to_ghas: 'true'
+
+  trivy-image:
+    name: Container image scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./actions/trivy-scanner
+        with:
+          target: 'myorg/myapp:latest'
+          scan_type: image
+          severity: CRITICAL
+          ignore_unfixed: 'true'
+          upload_to_ghas: 'true'

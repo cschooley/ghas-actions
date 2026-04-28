@@ -1,0 +1,26 @@
+name: Trivy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  scan:
+    name: Filesystem scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./actions/trivy-scanner
+        with:
+          target: '.'
+          scan_type: fs
+          severity: HIGH
+          upload_to_ghas: 'true'
