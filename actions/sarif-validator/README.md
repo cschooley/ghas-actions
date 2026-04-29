@@ -73,6 +73,19 @@ Summary: 156 result(s), 42 unique rule(s)
 Result: PASS
 ```
 
+## Trigger / Cost
+
+This action runs in milliseconds — it reads a local file and does no network calls. Add it before every `upload-sarif` step regardless of trigger. There is no cost reason to skip it.
+
+```yaml
+on:
+  pull_request:
+  push:
+    branches: [main]
+```
+
+See [docs/workflow-triggers.md](../../docs/workflow-triggers.md) for broader trigger strategy guidance.
+
 ## Known Limitations
 
 - Does not validate against the full JSON Schema for SARIF 2.1.0 — checks are targeted at the fields GitHub code scanning actually uses
