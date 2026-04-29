@@ -1,0 +1,32 @@
+name: ZAP Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  zap-baseline:
+    name: ZAP baseline scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    # Start your app as a service or deploy to a staging URL first.
+    # For a Docker-based app:
+    services:
+      app:
+        image: myorg/myapp:latest
+        ports:
+          - 8080:8080
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./actions/zap-scanner
+        with:
+          target_url: 'http://localhost:8080'
+          scan_type: baseline
+          upload_to_ghas: 'true'

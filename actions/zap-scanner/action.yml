@@ -1,0 +1,48 @@
+name: 'ZAP Scanner'
+description: 'Run an OWASP ZAP DAST scan against a live target and upload results to GHAS'
+author: 'cschooley'
+
+inputs:
+  target_url:
+    description: 'URL of the running application to scan'
+    required: true
+  scan_type:
+    description: 'baseline (passive, safe for CI) or full (active, authorized targets only)'
+    required: false
+    default: 'baseline'
+  output_file:
+    description: 'Path to write SARIF output'
+    required: false
+    default: 'zap-results.sarif'
+  upload_to_ghas:
+    description: 'Upload SARIF results to GitHub code scanning'
+    required: false
+    default: 'true'
+  rules_file:
+    description: 'Path to a ZAP rules TSV file to tune alert levels (PASS/WARN/FAIL/IGNORE)'
+    required: false
+    default: ''
+  fail_on_warnings:
+    description: 'Exit 1 on warning-level findings (ZAP exit code 1) as well as failures'
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Run ZAP scan
+      run: python ${{ github.action_path }}/src/scan.py
+      shell: bash
+      env:
+        INPUT_TARGET_URL: ${{ inputs.target_url }}
+        INPUT_SCAN_TYPE: ${{ inputs.scan_type }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output_file }}
+        INPUT_RULES_FILE: ${{ inputs.rules_file }}
+        INPUT_FAIL_ON_WARNINGS: ${{ inputs.fail_on_warnings }}
+
+    - name: Upload SARIF to GHAS
+      if: inputs.upload_to_ghas == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output_file }}
+        category: zap-${{ inputs.scan_type }}
