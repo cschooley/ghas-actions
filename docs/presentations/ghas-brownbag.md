@@ -132,6 +132,45 @@ Finding! ... 3 weeks later, different context
 
 ---
 
+## "But we have AI for that"
+
+AI coding tools and security gates do different jobs — they're not competing.
+
+| | AI assistant (Copilot, etc.) | GHAS + this library |
+|---|---|---|
+| **Knows about** | Patterns in training data | Live CVE/advisory databases |
+| **Runs when** | Someone asks it to | Every PR, automatically |
+| **Output** | Suggestion in an editor | Blocked merge + audit trail |
+| **Covers** | Code being written now | All deps, past and future |
+
+The more your team leans on AI to write code, the more you need systematic scanning — AI-generated code introduces vulnerabilities at a measurable rate.
+
+**They're complementary. Copilot writes the code. GHAS gates what ships.**
+
+---
+
+## Compliance mapping
+
+Automated, documented scanning isn't just good practice — it's audit evidence.
+
+| Framework | Relevant control | What satisfies it |
+|---|---|---|
+| **NIST 800-53** | RA-5 Vulnerability Scanning | Trivy, ZAP on every PR |
+| **NIST 800-53** | SA-11 Developer Testing | CodeQL, sarif-validator |
+| **NIST 800-53** | CM-4 Impact Analyses | `dependency-review-gate` before merge |
+| **NIST 800-53** | AU-12 Audit Records | SARIF uploads + `findings-exporter` |
+| **NIST 800-218** | PW.8 / RV.1 / RV.2 | Full AppSec Cycle (previous slide) |
+| **OWASP ASVS** | V10 Malicious Code | Trivy SCA |
+| **OWASP ASVS** | V14 Configuration | Trivy `config` scan (IaC) |
+| **HIPAA** §164.308(a)(8) | Evaluation — regular security assessment | Scheduled scans + findings export |
+| **CJIS** 5.11 | Formal Audits | Timestamped SARIF trail, PR gate log |
+| **SOC2** CC8.1 | Change management gate | PR blocked until scan passes |
+| **SOC2** CC7.1 | System monitoring | `findings-exporter` → reporting pipeline |
+
+*"Our AI reviewed it"* is not a control response. A timestamped gate with a documented finding record is.
+
+---
+
 <!-- _class: filmstrip -->
 
 # The AppSec Cycle
