@@ -1,0 +1,69 @@
+name: 'AI PR Reviewer'
+description: 'Claude-powered PR security review with optional SARIF output for GHAS code scanning'
+author: 'cschooley'
+
+inputs:
+  anthropic_api_key:
+    description: 'Anthropic API key (store as a repo secret)'
+    required: true
+  github_token:
+    description: 'GitHub token for reading the diff and posting comments'
+    required: true
+  repo:
+    description: 'Repository in owner/repo format'
+    required: true
+  pr_number:
+    description: 'Pull request number to review'
+    required: true
+  model:
+    description: 'Claude model — haiku for speed/cost, sonnet for depth'
+    required: false
+    default: 'claude-haiku-4-5-20251001'
+  mode:
+    description: 'comment (post PR review comment) or sarif (upload findings to GHAS)'
+    required: false
+    default: 'comment'
+  output_file:
+    description: 'SARIF output path (used when mode: sarif)'
+    required: false
+    default: 'ai-review.sarif'
+  upload_to_ghas:
+    description: 'Upload SARIF to GitHub code scanning (when mode: sarif)'
+    required: false
+    default: 'true'
+  fail_on_findings:
+    description: 'Exit 1 if findings are detected (advisory mode when false)'
+    required: false
+    default: 'false'
+  focus:
+    description: 'Review focus: security, general, or both'
+    required: false
+    default: 'security'
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      run: pip install anthropic
+      shell: bash
+
+    - name: Run AI review
+      run: python ${{ github.action_path }}/src/review.py
+      shell: bash
+      env:
+        INPUT_ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
+        INPUT_REPO: ${{ inputs.repo }}
+        INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+        INPUT_MODEL: ${{ inputs.model }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output_file }}
+        INPUT_FAIL_ON_FINDINGS: ${{ inputs.fail_on_findings }}
+        INPUT_FOCUS: ${{ inputs.focus }}
+
+    - name: Upload SARIF to GHAS
+      if: inputs.mode == 'sarif' && inputs.upload_to_ghas == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output_file }}
+        category: ai-reviewer
