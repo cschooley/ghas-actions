@@ -17,7 +17,7 @@ jobs:
 
       - name: Dependency Review
         continue-on-error: true  # remove once dependency graph is indexed for this repo
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           # Block PRs that introduce vulnerabilities at these severities or higher
           fail-on-severity: moderate
