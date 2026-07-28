@@ -1,0 +1,30 @@
+name: SonarQube Scan
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  sonarqube:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud analysis
+        uses: sonarsource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Pull SonarQube results into GHAS
+        uses: cschooley/ghas-actions/actions/sonarqube-scanner@main
+        with:
+          sonar_token: ${{ secrets.SONAR_TOKEN }}
+          project_key: my-org_my-project
+          organization: my-org
+          severity_filter: MAJOR
