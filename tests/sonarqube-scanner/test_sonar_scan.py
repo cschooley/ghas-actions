@@ -142,8 +142,7 @@ def test_convert_deduplicates_rules_across_issues():
 def test_convert_help_uri_links_to_sonar_rule_page():
     sarif = scan.convert_to_sarif([make_issue(rule="python:S1234")], {}, "https://sonar.example.com")
     help_uri = sarif["runs"][0]["tool"]["driver"]["rules"][0]["helpUri"]
-    assert "sonar.example.com" in help_uri
-    assert "python:S1234" in help_uri
+    assert help_uri == "https://sonar.example.com/coding_rules?open=python:S1234&rule_key=python:S1234"
 
 def test_convert_empty_issues_produces_no_results():
     sarif = scan.convert_to_sarif([], {}, "https://sonarcloud.io")
