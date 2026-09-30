@@ -1,0 +1,51 @@
+name: 'StackHawk Scanner'
+description: 'Run a StackHawk HawkScan DAST scan against a live target and upload results to GHAS'
+author: 'cschooley'
+
+# StackHawk is a commercial service (free tier available). A StackHawk account,
+# API key, and application ID are required: https://app.stackhawk.com
+
+inputs:
+  api_key:
+    description: 'StackHawk API key. Pass from a secret, never inline.'
+    required: true
+  app_id:
+    description: 'StackHawk application ID, exposed to stackhawk.yml as ${APP_ID}'
+    required: true
+  hawk_config:
+    description: 'Path to the stackhawk.yml config file, relative to the workspace'
+    required: false
+    default: 'stackhawk.yml'
+  output_file:
+    description: 'Path to write SARIF output'
+    required: false
+    default: 'stackhawk-results.sarif'
+  upload_to_ghas:
+    description: 'Upload SARIF results to GitHub code scanning'
+    required: false
+    default: 'true'
+  fail_on_findings:
+    description: 'Exit 1 when HawkScan reports findings. Set false for advisory mode.'
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Run HawkScan
+      run: python ${{ github.action_path }}/src/scan.py
+      shell: bash
+      env:
+        INPUT_API_KEY: ${{ inputs.api_key }}
+        INPUT_APP_ID: ${{ inputs.app_id }}
+        INPUT_HAWK_CONFIG: ${{ inputs.hawk_config }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output_file }}
+        INPUT_FAIL_ON_FINDINGS: ${{ inputs.fail_on_findings }}
+
+    - name: Upload SARIF to GHAS
+      # Upload even when the scan step fails on findings, so blocked PRs still show alerts.
+      if: ${{ !cancelled() && inputs.upload_to_ghas == 'true' && hashFiles(inputs.output_file) != '' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output_file }}
+        category: stackhawk

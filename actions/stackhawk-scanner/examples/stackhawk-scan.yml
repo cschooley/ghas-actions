@@ -1,0 +1,42 @@
+name: StackHawk Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  stackhawk:
+    name: StackHawk DAST scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    # Start your app as a service or deploy to a staging URL first.
+    # stackhawk.yml should point app.host at it, e.g. http://localhost:8080
+    services:
+      app:
+        image: myorg/myapp:latest
+        ports:
+          - 8080:8080
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./actions/stackhawk-scanner
+        with:
+          api_key: ${{ secrets.HAWK_API_KEY }}
+          app_id: ${{ vars.STACKHAWK_APP_ID }}
+          hawk_config: stackhawk.yml
+          fail_on_findings: 'true'
+
+# Minimal stackhawk.yml:
+#
+#   app:
+#     applicationId: ${APP_ID}
+#     env: Development
+#     host: http://localhost:8080
+#   hawk:
+#     failureThreshold: high
