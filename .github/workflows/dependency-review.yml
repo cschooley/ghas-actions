@@ -22,8 +22,13 @@ jobs:
           # Block PRs that introduce vulnerabilities at these severities or higher
           fail-on-severity: moderate
 
-          # Block dependencies with these SPDX licenses (copyleft / proprietary)
-          deny-licenses: GPL-2.0, GPL-3.0, LGPL-2.0, LGPL-2.1, AGPL-3.0
+          # Only allow dependencies with these SPDX licenses (permissive / weak copyleft).
+          # Allowlist replaces the deprecated deny-licenses option:
+          # https://github.com/actions/dependency-review-action/issues/997
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MPL-2.0, 0BSD, Unlicense, CC0-1.0, Python-2.0
+
+          # Per-package exceptions for reviewed dependencies (purl format), e.g.:
+          # allow-dependencies-licenses: pkg:pypi/some-package
 
           # Post a summary comment on the PR
           comment-summary-in-pr: always
