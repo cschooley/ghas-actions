@@ -1,0 +1,46 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  security-events: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-review:
+    name: Claude security review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Comment mode: posts a markdown review directly on the PR
+      - uses: cschooley/ghas-actions/actions/ai-pr-reviewer@main
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          repo: ${{ github.repository }}
+          pr_number: ${{ github.event.pull_request.number }}
+          mode: comment
+          focus: security
+          fail_on_findings: 'false'   # advisory — never blocks
+
+  ai-review-sarif:
+    name: Claude security review (SARIF)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SARIF mode: findings appear in Security → Code scanning alerts
+      - uses: cschooley/ghas-actions/actions/ai-pr-reviewer@main
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          repo: ${{ github.repository }}
+          pr_number: ${{ github.event.pull_request.number }}
+          mode: sarif
+          focus: security
+          upload_to_ghas: 'true'
+          fail_on_findings: 'false'
