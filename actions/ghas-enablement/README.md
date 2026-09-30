@@ -66,6 +66,24 @@ See [examples/enable-org-wide.yml](examples/enable-org-wide.yml).
 - Code scanning: detects the repo's primary language and deploys an appropriate CodeQL workflow. If the language isn't supported by CodeQL, that repo is skipped with an error and processing continues
 - Secret scanning: also enables push protection
 
+## Trigger / Cost
+
+This action is a one-time or on-demand setup tool. Use `workflow_dispatch` rather than automatic triggers — you don't want it re-running on every push.
+
+```yaml
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Repo (owner/repo) or org name'
+        required: true
+      dry_run:
+        description: 'Dry run only'
+        default: 'true'
+```
+
+See [docs/workflow-triggers.md](../../docs/workflow-triggers.md) for broader trigger strategy guidance.
+
 ## Known Limitations
 
 - Code scanning support is limited to languages CodeQL supports: C/C++, C#, Go, Java/Kotlin, JavaScript/TypeScript, Python, Ruby, Swift

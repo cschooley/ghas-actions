@@ -1,0 +1,56 @@
+name: 'SonarQube Scanner'
+description: 'Pull SonarQube/SonarCloud issues for a project and upload results to GHAS'
+author: 'cschooley'
+
+inputs:
+  sonar_host_url:
+    description: 'SonarQube server URL'
+    required: false
+    default: 'https://sonarcloud.io'
+  sonar_token:
+    description: 'SonarQube authentication token'
+    required: true
+  project_key:
+    description: 'SonarQube project key'
+    required: true
+  organization:
+    description: 'SonarCloud organization (required for SonarCloud, omit for self-hosted)'
+    required: false
+    default: ''
+  output_file:
+    description: 'Path to write SARIF output'
+    required: false
+    default: 'sonar-results.sarif'
+  upload_to_ghas:
+    description: 'Upload SARIF results to GitHub code scanning'
+    required: false
+    default: 'true'
+  severity_filter:
+    description: 'Minimum severity to include: BLOCKER, CRITICAL, MAJOR, MINOR, INFO'
+    required: false
+    default: 'MAJOR'
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      run: pip install -r ${{ github.action_path }}/requirements.txt --quiet
+      shell: bash
+
+    - name: Fetch SonarQube issues
+      run: python ${{ github.action_path }}/src/scan.py
+      shell: bash
+      env:
+        INPUT_SONAR_HOST_URL: ${{ inputs.sonar_host_url }}
+        INPUT_SONAR_TOKEN: ${{ inputs.sonar_token }}
+        INPUT_PROJECT_KEY: ${{ inputs.project_key }}
+        INPUT_ORGANIZATION: ${{ inputs.organization }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output_file }}
+        INPUT_SEVERITY_FILTER: ${{ inputs.severity_filter }}
+
+    - name: Upload SARIF to GHAS
+      if: inputs.upload_to_ghas == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output_file }}
+        category: sonarqube

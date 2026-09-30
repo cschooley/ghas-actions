@@ -75,6 +75,23 @@ See [examples/export-on-schedule.yml](examples/export-on-schedule.yml).
 
 The default `GITHUB_TOKEN` has `security_events` read access when GHAS is enabled on the repo. To export alerts from a different repo, use a PAT or GitHub App token with the appropriate scope.
 
+## Trigger / Cost
+
+This action is a reporting and audit tool, not a PR gate. It doesn't make sense as a `pull_request` trigger. Use `schedule` for recurring exports or `workflow_dispatch` for on-demand pulls.
+
+```yaml
+# Nightly export to artifact
+on:
+  schedule:
+    - cron: '0 6 * * *'
+
+# Or on demand
+on:
+  workflow_dispatch:
+```
+
+See [docs/workflow-triggers.md](../../docs/workflow-triggers.md) for broader trigger strategy guidance.
+
 ## Known Limitations
 
 - **Secret scanning file/line**: GitHub exposes file locations for secret scanning alerts via a separate `/locations` endpoint. This action does not fetch that data in v1; `file` and `line` are always `null` for secret scanning findings.

@@ -76,6 +76,18 @@ permissions:
   pull-requests: write  # post PR comment
 ```
 
+## Trigger / Cost
+
+This action only makes sense on `pull_request` — it needs a base and head SHA to compare. It makes GitHub API calls only (no local scanning) and completes in seconds. Safe to run on every PR with no cost concern.
+
+```yaml
+on:
+  pull_request:
+    branches: [main]
+```
+
+See [docs/workflow-triggers.md](../../docs/workflow-triggers.md) for broader trigger strategy guidance.
+
 ## Known Limitations
 
 - Only evaluates **added** dependencies, not removed or updated ones
